@@ -47,7 +47,6 @@ public class Aerodrom {
 	
 	public void unshow()  throws AerodromJeSelektovanException{
 		if(isSelected()) {
-			System.out.println("AA");
 			throw new AerodromJeSelektovanException();
 		}
 		shown = false;

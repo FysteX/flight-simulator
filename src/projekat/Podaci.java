@@ -62,7 +62,7 @@ public class Podaci {
 				if(aerodrom.isSelected()) {
 					aerodrom.deselect();
 					selectedAerodrom = null;
-					aplikacija.getTimer().unpause();
+					aplikacija.getTimer().unpauseShutDownTimer();
 				}else {
 					if(selectedAerodrom != null) {
 						selectedAerodrom.deselect();
@@ -70,7 +70,7 @@ public class Podaci {
 					aerodrom.select();
 					selectedAerodrom = aerodrom;
 					aplikacija.getScena().setRedFrame();
-					aplikacija.getTimer().pause();
+					aplikacija.getTimer().pauseShutDownTimer();
 				}
 			} 
 			aplikacija.getScena().repaint();

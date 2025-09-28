@@ -160,8 +160,9 @@ public class Aplikacija extends Frame {
 					if (x.length() == 0 || y.length() == 0 || naziv.length() == 0 || kod.length() == 0) {
 						throw new PraznoPoljeException();
 					}
-
-					podaci.dodajAerodrom(naziv, kod, x, y);
+					synchronized(podaci) {
+						podaci.dodajAerodrom(naziv, kod, x, y);
+					}
 
 					dispose();
 				} catch (NumberFormatException | PogresnoUnetKodException | PraznoPoljeException
@@ -291,9 +292,10 @@ public class Aplikacija extends Frame {
 							|| kodPocetnogAerodrom.length() == 0 || kodKrajnjegAerodrom.length() == 0) {
 						throw new PraznoPoljeException();
 					}
-
-					podaci.dodajLet(kodPocetnogAerodrom, kodKrajnjegAerodrom, satPoletanja, minutPoletanja,
-							trajanjeLeta);
+					synchronized(podaci) {
+						podaci.dodajLet(kodPocetnogAerodrom, kodKrajnjegAerodrom, satPoletanja, minutPoletanja,
+								trajanjeLeta);
+					}
 
 					dispose();
 				} catch (NumberFormatException | PogresnoUnetKodException | PraznoPoljeException
@@ -411,7 +413,9 @@ public class Aplikacija extends Frame {
 		citanjeAerodromaItem.addActionListener((ae) -> {
 			akcijaIzvrsena();
 			try {
-				podaci.procitajAerodromeIzFajla();
+				synchronized(podaci) {
+					podaci.procitajAerodromeIzFajla();
+				}
 			} catch (PogresnoUnetKodException | LosBrojKolonaException | KoordinateVanOpsegaException
 					| AerodromSaIstimKodomPostoji | AerodromSaIstimKoordinatamaPostoji | FileNotFoundException | CitanjeIzFajlaException e) {
 				String porukaGreske = new String();
@@ -438,7 +442,9 @@ public class Aplikacija extends Frame {
 		  citanjeLetovaItem.addActionListener((ae) -> { 
 			  akcijaIzvrsena();
 			  try {
-				  podaci.procitajLetoveIzFajla();
+				  synchronized(podaci) {
+					  podaci.procitajLetoveIzFajla();
+				  }
 				  } catch (PogresnoUnetKodException | LoseUnetoVremeException | UnetiIstiAerodromiException |
 						  PocetniAerodromNePostojiException | KrajnjiAerodromNePostojiException | 
 							LosBrojKolonaException | FileNotFoundException | CitanjeIzFajlaException e) 
@@ -477,7 +483,9 @@ public class Aplikacija extends Frame {
 		cuvanjeItem.addActionListener((ae) -> {
 			akcijaIzvrsena();
 			try {
-				podaci.upisiPodatkeUFajlove();
+				synchronized(podaci) {
+					podaci.upisiPodatkeUFajlove();
+				}
 			} catch (FileNotFoundException e) {
 				new GreskaDialog(this, "Fajlovi ne postoje", ModalityType.APPLICATION_MODAL);
 			}
@@ -508,7 +516,9 @@ public class Aplikacija extends Frame {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				podaci.selectAerodrom(e.getX(), e.getY());
+				synchronized(podaci) {
+					podaci.selectAerodrom(e.getX(), e.getY());
+				}
 				akcijaIzvrsena();
 			}	
 		});
@@ -540,5 +550,8 @@ public class Aplikacija extends Frame {
 	public static void main(String[] args) {
 		new Aplikacija();
 	}
-
 }
+
+//niti awt, timer, avioni
+//avioni mogu da menjaju samo avione i na kraju izbacuju avion iz podataka.
+//

@@ -3,7 +3,6 @@ package projekat;
 public class Let {
 	Aerodrom pocetniAerodrom;
 	Aerodrom krajnjiAerodrom;
-	Podaci podaci;
 	Time vremePoletanja;
 	int minutiTrajanjaLeta;
 	

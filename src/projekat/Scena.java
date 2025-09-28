@@ -29,20 +29,19 @@ public class Scena extends Canvas {
 	
 	@Override
 	public void paint(Graphics g) {
-		
-		for(Aerodrom aerodrom: aplikacija.getPodaci().getListaAerodroma()) {	
-			if(aerodrom.isShown()) {
-				g.setColor(Color.gray);
-				g.fillRect(aerodrom.getX()*SCALE, aerodrom.getY()*SCALE, SCALE, SCALE);
-				g.drawString(aerodrom.getKod().toString(), aerodrom.getX()*SCALE + SCALE, aerodrom.getY()*SCALE + SCALE);
-				//scena je skalirana sa 7 pa se moraju skalirati i nacrtane figure
-				if(aerodrom.isSelected() && isRedFramePaintable) {
-					g.setColor(Color.red);
-					g.drawRect(aerodrom.getX()*SCALE, aerodrom.getY()*SCALE, SCALE, SCALE);
-				}
-			}	
-		}
 		synchronized(aplikacija.getPodaci()) {
+			for(Aerodrom aerodrom: aplikacija.getPodaci().getListaAerodroma()) {	
+				if(aerodrom.isShown()) {
+					g.setColor(Color.gray);
+					g.fillRect(aerodrom.getX()*SCALE, aerodrom.getY()*SCALE, SCALE, SCALE);
+					g.drawString(aerodrom.getKod().toString(), aerodrom.getX()*SCALE + SCALE, aerodrom.getY()*SCALE + SCALE);
+					//scena je skalirana sa 7 pa se moraju skalirati i nacrtane figure
+					if(aerodrom.isSelected() && isRedFramePaintable) {
+						g.setColor(Color.red);
+						g.drawRect(aerodrom.getX()*SCALE, aerodrom.getY()*SCALE, SCALE, SCALE);
+					}
+				}	
+			}
 			for(Avion avion: aplikacija.getPodaci().getListaAviona()) {
 				synchronized (avion) {
 					if(avion.daLiJePoleteo()) {
@@ -51,10 +50,10 @@ public class Scena extends Canvas {
 					}
 				}
 			}
-			if(aplikacija.getTimer().daLiJeSimulacijaZapoceta()) {
-				g.setColor(Color.red);
-				g.drawString(aplikacija.getTimer().getVreme().toString(), SCALE, SCALE + 5);
-			}
+		}
+		if(aplikacija.getTimer().daLiJeSimulacijaZapoceta()) {
+			g.setColor(Color.red);
+			g.drawString(aplikacija.getTimer().getVreme().toString(), SCALE, SCALE + 5);
 		}
 	}
 
