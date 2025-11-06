@@ -1,6 +1,6 @@
 2D flight simulator.
 
-Application consists of 2D map, menu for adding airports and flights, saving them and reading them from CSV file, list of all added airports, and operations with simulation (start, pause, stop).
+Application consists of 2D map, menu for adding airports and flights, saving them and reading them from CSV file, list of all added airports, and operations with simulation (start, pause, restart the simulation).
 
 By adding airport, it is shown on map as gray square and in list of all airports, airports can be selected by clicking on them, and user can toggle visibility of airport on map with checkbox next to airport 
 description in the list of airports.
