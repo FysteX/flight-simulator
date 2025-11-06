@@ -8,49 +8,77 @@ public class Timer extends Thread {
 	private boolean simulacijaZapoceta;
 	
 	private int shutDownTime = 60;
-	private boolean paused = false;
+	private boolean shutDownTimePaused = false;
 	
-	int cnt10 = 0;
+	private int cnt10 = 0;
+	private int cnt2 = 0;
+	private boolean simulacijaPauzirana = false;
 	
 	private Aplikacija aplikacija;
 	
-	private Time vreme;
+	private Time vremeSimulacije;
 	
 	public Timer(Aplikacija aplikacija) {
 		this.aplikacija = aplikacija;
 		simulacijaZapoceta = false;
 	}
 	
-	public synchronized Time getVreme() {
-		return vreme;
+	public synchronized Time getVremeSimulacije() {
+		return vremeSimulacije;
 	}
 	
 	public synchronized boolean daLiJeSimulacijaZapoceta() {
 		return simulacijaZapoceta;
 	}
 	
-	public synchronized void zapocniSimulaciju() {
-		vreme = new Time(0, 0);
-		simulacijaZapoceta = true;
-		cnt10 = 9;
+	public synchronized void inkrementirajVremeSimulacije() {
+		vremeSimulacije.inkrementirajVreme();
 	}
 	
+	public synchronized void pokreniSimulaciju() {
+		if(!simulacijaZapoceta ) {
+			vremeSimulacije = new Time(0, 0);
+			simulacijaZapoceta = true;
+			cnt10 = 9;
+		}
+		else if (simulacijaPauzirana){
+			this.notify();
+			simulacijaPauzirana = false;
+		}
+	}
 	
-	//ako je vreme pocetka nekog leta, onda kreira avion i dodaje ga u listu cekanja njegovog pocetnog aerodroma kako bi kasnije u nekom 
-	//desetominutnom intervalu poleteo i takodje azu
-	private void azurirajVremena() {
+	public synchronized void pauzirajSimulaciju() {
+		simulacijaPauzirana = true;
+	}
+	
+	public synchronized void restartujSimulaciju() {
+		vremeSimulacije.setSat(0);
+		vremeSimulacije.setMinut(0);
+		simulacijaZapoceta = false;
+		simulacijaPauzirana = false;
+		shutDownTimePaused = false;
+		cnt2 = 1;
+	}
+	
+	//vrsi notify aviona kako bi on azurirao svoju poziciju
+	private void azurirajVremenaAviona() {
 		synchronized(aplikacija.getPodaci()) {
 			for(Avion avion : aplikacija.getPodaci().getListaAviona()) {
 				synchronized(avion) {
 					if(avion.daLiJePoleteo()) {
-						avion.getVreme().uvecajVreme(2);
+						avion.getVreme().uvecajVreme(2);//moze i bez ovoga jer na svake 0.2 sec signaliziran avion sam azurira svoje koordinate
 						avion.notify();	
 					}
 				}
 			}
+		}
+	}
+	
+	//ako je vreme da neki avion poleti, kreira avion sa vremenom poletanja i dodaje ga u listu cekanja pocetnog aerodroma
+	private void kreirajAvioneNaOsnovuLetova() {
+		synchronized(aplikacija.getPodaci()) {
 			for(Let let: aplikacija.getPodaci().getListaLetova()) {
-				//posto se ova funkcija zove na svake 0.2 milisec pa trenutno vreme moze da bude vece od vreme poletanja nekog aviona koristi se compare
-				if(vreme.compare(let.getVremePoletanja()) >= 0) {
+				if(vremeSimulacije.compare(let.getVremePoletanja()) == 0) {
 					Avion avion = new Avion(aplikacija, let);
 					synchronized(aplikacija.getPodaci()) {
 						aplikacija.getPodaci().dodajAvion(avion);
@@ -60,13 +88,14 @@ public class Timer extends Thread {
 			}
 		}
 	}
+	
 	//ukoliko postoji neki let na aerodromu u redu letova koji cekaju, pusta prvog koji je dosao na red
 	private void zapocniLetove() {
 		synchronized (aplikacija.getPodaci()) {
 			for(Aerodrom aerodrom: aplikacija.getPodaci().getListaAerodroma()) {
 				if(aerodrom.kolikoAvionaCeka() > 0) {
 					Avion avion = aerodrom.getAvionKojiCeka();
-					avion.setVremePoletanja(vreme.clone());
+					avion.setVremePoletanja(vremeSimulacije.clone());
 					avion.start();
 				}
 			}
@@ -76,26 +105,26 @@ public class Timer extends Thread {
 	@Override
 	public void run() {
 		try {
-			int cnt2 = 1;
 			while(!this.isInterrupted()) {
 				Thread.sleep(100);
 				cnt10++;
 				aplikacija.getScena().toggleRedFrame();
 				//ako je simulacija zapoceta, azuriraju se vremena aviona i vreme simulacije
-				if(simulacijaZapoceta) {
-					cnt2++;
-					if(cnt2 == 2) {
-						azurirajVremena();
-						cnt2 = 0;	
-					}
-					synchronized(this) {
-						vreme.uvecajVreme(1);
+				synchronized(this) {
+					if(simulacijaZapoceta && !simulacijaPauzirana) {
+						cnt2++;
+						if(cnt2 == 2) {
+							azurirajVremenaAviona();
+							cnt2 = 0;	
+						}
+						kreirajAvioneNaOsnovuLetova();// ovo mora pre inkrementiranja vremena kako bi poleteli letovi u 00:00
+						inkrementirajVremeSimulacije();
 					}
 				}
 				if(cnt10 == 10) {
 					zapocniLetove();
 					synchronized(this) {
-						if(!paused && !simulacijaZapoceta) {
+						if(!shutDownTimePaused && !simulacijaZapoceta) {
 							shutDownTime--;
 						}
 						if(shutDownTime == 5) {
@@ -114,11 +143,11 @@ public class Timer extends Thread {
 	}
 	
 	public synchronized void pauseShutDownTimer() {
-		paused = true;
+		shutDownTimePaused = true;
 	}
 	
 	public synchronized void unpauseShutDownTimer() {
-		paused = false;
+		shutDownTimePaused = false;
 		this.notify();
 	}
 	

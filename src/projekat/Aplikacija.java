@@ -36,6 +36,7 @@ import java.util.List;
 public class Aplikacija extends Frame {
 
 	private Scena scena = new Scena(this);
+	private Podaci inicijalniPodaci;
 	private Podaci podaci = new Podaci(this);
 	private Timer timer = new Timer(this);
 	
@@ -68,7 +69,6 @@ public class Aplikacija extends Frame {
 						new GreskaDialog(Aplikacija.this, "Ne mozete ukloniti selektovan aerodrom sa prikaza", ModalityType.APPLICATION_MODAL);
 					}
 				}
-				scena.repaint();
 			}
 		
 		});
@@ -76,6 +76,19 @@ public class Aplikacija extends Frame {
 		aerodromPanel.add(checkbox);
 		listaAerodromaGUI.add(aerodromPanel);
 		pack();
+	}
+	
+	public void zameniListuAerodromaGUI() {
+		synchronized(podaci) {
+			for(Aerodrom aerodrom: podaci.getListaAerodroma()) {
+				for(int i = 0; i < listaAerodromaGUI.getComponentCount() ; i++) {
+					AerodromCheckbox current = (AerodromCheckbox)((Panel)listaAerodromaGUI.getComponent(i)).getComponent(1);
+					if(current.getAerodrom().getKod() == aerodrom.getKod()) {
+						current.setAerodrom(aerodrom);
+					}
+				}
+			}
+		}
 	}
 	
 	public Timer getTimer() {
@@ -360,6 +373,11 @@ public class Aplikacija extends Frame {
 	public void gasiAplikaciju() {
 		dispose();
 		timer.interrupt();
+		synchronized(podaci) {
+			for(Avion avion: podaci.getListaAviona()) {
+				avion.interrupt();
+			}
+		}
 	}
 	
 	public void populateWindow() {
@@ -387,11 +405,31 @@ public class Aplikacija extends Frame {
 		});
 		
 		aerodromItem.addActionListener((ae) -> {
-			new AerodromWindow(this);
+			try {
+				synchronized(timer) {
+					if(timer.daLiJeSimulacijaZapoceta()) {
+						throw new SimulacijaUTokuException();
+					}
+				}
+				new AerodromWindow(this);
+			} catch ( SimulacijaUTokuException e) {
+				String porukaGreske = "Ne mozete da dodajete aerodrome u toku simulacije";
+				new GreskaDialog(Aplikacija.this, porukaGreske, ModalityType.APPLICATION_MODAL);
+			}
 		});
 
 		letItem.addActionListener((ae) -> {
-			new LetWindow(this);
+			try {
+				synchronized(timer) {
+					if(timer.daLiJeSimulacijaZapoceta()) {
+						throw new SimulacijaUTokuException();
+					}
+				}
+				new LetWindow(this);
+			} catch ( SimulacijaUTokuException e) {
+				String porukaGreske = "Ne mozete da letove aerodrome u toku simulacije";
+				new GreskaDialog(Aplikacija.this, porukaGreske, ModalityType.APPLICATION_MODAL);
+			}
 		});
 
 		aerodromItem.setLabel("Aerodrom");
@@ -413,11 +451,17 @@ public class Aplikacija extends Frame {
 		citanjeAerodromaItem.addActionListener((ae) -> {
 			akcijaIzvrsena();
 			try {
+				synchronized(timer) {
+					  if(timer.daLiJeSimulacijaZapoceta()) {
+						  throw new SimulacijaUTokuException();
+					  }
+				  }
 				synchronized(podaci) {
 					podaci.procitajAerodromeIzFajla();
 				}
 			} catch (PogresnoUnetKodException | LosBrojKolonaException | KoordinateVanOpsegaException
-					| AerodromSaIstimKodomPostoji | AerodromSaIstimKoordinatamaPostoji | FileNotFoundException | CitanjeIzFajlaException e) {
+					| AerodromSaIstimKodomPostoji | AerodromSaIstimKoordinatamaPostoji | FileNotFoundException | CitanjeIzFajlaException 
+					| SimulacijaUTokuException e) {
 				String porukaGreske = new String();
 				if (e instanceof LosBrojKolonaException) {
 					porukaGreske = new String("U fajlu sa aerodromima, svaki red mora imati 4 kolone.");
@@ -433,6 +477,8 @@ public class Aplikacija extends Frame {
 					porukaGreske = new String("Fajl sa aerodromima ne posotji");
 				} else if (e instanceof CitanjeIzFajlaException) {
 					porukaGreske = new String("Neuspesno citanje iz fajla sa aerodromima");
+				} else if (e instanceof SimulacijaUTokuException) {
+					porukaGreske = new String("Ne mozete citati aerodrome iz fajla jer je simulacija zapoceta.");
 				}
 				new GreskaDialog(Aplikacija.this, porukaGreske, ModalityType.APPLICATION_MODAL);
 			}
@@ -442,12 +488,17 @@ public class Aplikacija extends Frame {
 		  citanjeLetovaItem.addActionListener((ae) -> { 
 			  akcijaIzvrsena();
 			  try {
+				  synchronized(timer) {
+					  if(timer.daLiJeSimulacijaZapoceta()) {
+						  throw new SimulacijaUTokuException();
+					  }
+				  }
 				  synchronized(podaci) {
 					  podaci.procitajLetoveIzFajla();
 				  }
 				  } catch (PogresnoUnetKodException | LoseUnetoVremeException | UnetiIstiAerodromiException |
 						  PocetniAerodromNePostojiException | KrajnjiAerodromNePostojiException | 
-							LosBrojKolonaException | FileNotFoundException | CitanjeIzFajlaException e) 
+							LosBrojKolonaException | FileNotFoundException | CitanjeIzFajlaException | SimulacijaUTokuException e) 
 			  	  {
 					  String porukaGreske = new String();
 					  if (e instanceof PogresnoUnetKodException) {
@@ -466,6 +517,8 @@ public class Aplikacija extends Frame {
 						  porukaGreske = new String("Fajl sa letovima ne postoji");
 					  } else if (e instanceof CitanjeIzFajlaException) {
 						  porukaGreske = new String("Neuspesno citanje iz fajla sa letovima");
+					  } else if (e instanceof SimulacijaUTokuException) {
+						  porukaGreske = new String("Ne mozete procitati letove iz fajla jer je simulacija u toku.");
 					  }
 					  new GreskaDialog(Aplikacija.this, porukaGreske, ModalityType.APPLICATION_MODAL);
 				  } 
@@ -499,14 +552,59 @@ public class Aplikacija extends Frame {
 		Menu simulacijaMeni = new Menu();
 		simulacijaMeni.setLabel("Simulacija");
 		
-		MenuItem zapocniSimulacijuItem = new MenuItem();
-		zapocniSimulacijuItem.setLabel("Zapocni simulaciju");
+		MenuItem pokreniSimulacijuItem = new MenuItem();
+		pokreniSimulacijuItem.setLabel("Pokreni simulaciju");
 		
-		zapocniSimulacijuItem.addActionListener((ae) -> {
-			timer.zapocniSimulaciju();
+		pokreniSimulacijuItem.addActionListener((ae) -> {
+			if(!timer.daLiJeSimulacijaZapoceta()) {
+				try {
+					inicijalniPodaci = (Podaci)podaci.clone(true);
+				} catch (CloneNotSupportedException e) {
+					e.printStackTrace();
+				}
+			}
+			akcijaIzvrsena();
+			timer.pokreniSimulaciju();
 		});
 		
-		simulacijaMeni.add(zapocniSimulacijuItem);
+		simulacijaMeni.add(pokreniSimulacijuItem);
+		
+		MenuItem pauzirajSimulacijuItem = new MenuItem();
+		pauzirajSimulacijuItem.setLabel("Pauziraj simulaciju");
+		
+		pauzirajSimulacijuItem.addActionListener((ae) -> {;
+			akcijaIzvrsena();
+			System.out.println(podaci);
+			timer.pauzirajSimulaciju();
+		});
+		
+		simulacijaMeni.add(pauzirajSimulacijuItem);		
+		
+		MenuItem restartujSimulacijuItem = new MenuItem();
+		restartujSimulacijuItem.setLabel("Restartuj simulaciju");
+		
+		restartujSimulacijuItem.addActionListener((ae) -> {;
+			akcijaIzvrsena();
+			synchronized(podaci) {
+				try {
+					for(Avion avion: podaci.getListaAviona()) {
+						avion.interrupt();
+					}
+					for(int i = 0; i < this.listaAerodromaGUI.getComponentCount();) {
+						this.listaAerodromaGUI.remove(0);
+					}
+					podaci = (Podaci)inicijalniPodaci.clone(false);
+				} catch (Exception e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+			}
+			synchronized(timer) {
+				timer.restartujSimulaciju();
+			}
+		});
+		
+		simulacijaMeni.add(restartujSimulacijuItem);	
 		
 		meniTraka.add(simulacijaMeni);
 		

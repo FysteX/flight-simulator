@@ -17,5 +17,9 @@ public class AerodromCheckbox extends Checkbox {
 	public Aerodrom getAerodrom() {
 		return aerodrom;
 	}
+	
+	public void setAerodrom(Aerodrom aerodrom) {
+		this.aerodrom = aerodrom;
+	}
 
 }

@@ -68,7 +68,7 @@ public class Avion extends Thread {
 		poleteo = true;
 		int cnt = 0;
 		try {
-			while(cnt < let.getMinutiTrajanjaLeta() / 2.0) {
+			while(cnt < let.getMinutiTrajanjaLeta() / 2.0 && !this.isInterrupted()) {
 				synchronized (this) {
 					x += xPomeraj;
 					y += yPomeraj;

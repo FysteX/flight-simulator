@@ -8,11 +8,11 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Podaci {
+public class Podaci{
 
 	private List<Aerodrom> listaAerodroma;
 	private List<Let> listaLetova;
-	private List<Avion> listaAviona;
+	private List<Avion> listaAviona;	
 	
 	private String fajlAerodromaPutanja;
 	private String fajlLetovaPutanja;
@@ -20,6 +20,8 @@ public class Podaci {
 	private Aplikacija aplikacija;
 	
 	private Aerodrom selectedAerodrom;
+	
+	private boolean kopija = false;
 	
 	public Podaci(Aplikacija aplikacija) {
 		this.aplikacija = aplikacija;
@@ -31,6 +33,14 @@ public class Podaci {
 		
 		fajlAerodromaPutanja = "src/projekat/Aerodromi.csv";
 		fajlLetovaPutanja = "src/projekat/Letovi.csv";
+	}
+	
+	public void setKopija(boolean val) {
+		kopija = val;
+	}
+	
+	public boolean daLiJeKopija() {
+		return kopija;
 	}
 	
 	public List<Aerodrom> getListaAerodroma() {
@@ -54,6 +64,14 @@ public class Podaci {
 		return false;
 	}
 	
+	private boolean isAvionAtLocation(Avion avion, int x, int y) {
+		if(x <= avion.getX() + Scena.SCALE && x >= avion.getX() &&
+				y >= avion.getY() && y <= avion.getY() + Scena.SCALE) {
+			return true;
+		}
+		return false;
+	}
+	
 	//ova funkcija proverava da li je na kliknutoj poziciji (x, y) aerodrom i ukoliko jeste vrsi odredjenu selekciju i deselekciju
 	public void selectAerodrom(int x, int y) {
 		
@@ -71,9 +89,9 @@ public class Podaci {
 					selectedAerodrom = aerodrom;
 					aplikacija.getScena().setRedFrame();
 					aplikacija.getTimer().pauseShutDownTimer();
+					aplikacija.getScena().repaint();
 				}
 			} 
-			aplikacija.getScena().repaint();
 		}	
 	}
 	
@@ -212,8 +230,9 @@ public class Podaci {
 		}
 		Aerodrom aerodrom = new Aerodrom(naziv, kod, x, y);
 		listaAerodroma.add(aerodrom);
-		aplikacija.dodajUListuAerodromaGUI(aerodrom);
-		aplikacija.getScena().repaint();
+		if(!kopija) {
+			aplikacija.dodajUListuAerodromaGUI(aerodrom);
+		}
 	}
 	
 	public void dodajLet(String kodPocetnogAerodroma, String kodKrajnjegAerodroma, String satPoletanjaStr,
@@ -274,6 +293,50 @@ public class Podaci {
 			listaAviona.remove(avion);	
 		}
 	}
+	
+    public Object clone(boolean kopija) throws CloneNotSupportedException {
+        Podaci clone = new Podaci(this.aplikacija);
+        clone.setKopija(kopija);
+        for(Aerodrom aerodrom: this.listaAerodroma) {
+        	try {
+				clone.dodajAerodrom(aerodrom.getNaziv(), aerodrom.getKod(), "" + aerodrom.getX(), "" + aerodrom.getY());
+			} catch (PogresnoUnetKodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (KoordinateVanOpsegaException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AerodromSaIstimKodomPostoji e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (AerodromSaIstimKoordinatamaPostoji e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        for(Let let : this.listaLetova) {
+        	try {
+				clone.dodajLet(let.getPocetniAerodrom().getKod(), let.getKrajnjiAerodrom().getKod(),
+						 "" + let.getVremePoletanja().getSat(), "" + let.getVremePoletanja().getMinut(), "" + let.getMinutiTrajanjaLeta());
+			} catch (PogresnoUnetKodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (LoseUnetoVremeException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (UnetiIstiAerodromiException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (PocetniAerodromNePostojiException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (KrajnjiAerodromNePostojiException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        }
+        return clone;
+    }
 	
 	@Override
 	public String toString() {

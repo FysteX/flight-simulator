@@ -4,6 +4,7 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.GraphicsConfiguration;
+import java.awt.Polygon;
 
 public class Scena extends Canvas {
 
@@ -25,6 +26,12 @@ public class Scena extends Canvas {
 		
 		this.setBackground(Color.yellow);
 		this.setBounds(0, 0, 630, 630);
+	}
+	
+	private void drawTriangle(Graphics g, int x, int y) {
+		int[] xpoints = {x,  x + SCALE/2, x + SCALE};
+		int[] ypoints = {y + SCALE, y, y + SCALE};
+		g.fillPolygon(xpoints, ypoints, 3);
 	}
 	
 	@Override
@@ -51,9 +58,11 @@ public class Scena extends Canvas {
 				}
 			}
 		}
-		if(aplikacija.getTimer().daLiJeSimulacijaZapoceta()) {
-			g.setColor(Color.red);
-			g.drawString(aplikacija.getTimer().getVreme().toString(), SCALE, SCALE + 5);
+		synchronized(aplikacija.getTimer()) {
+			if(aplikacija.getTimer().daLiJeSimulacijaZapoceta()) {
+				g.setColor(Color.red);
+				g.drawString(aplikacija.getTimer().getVremeSimulacije().toString(), SCALE, SCALE + 5);
+			}
 		}
 	}
 
